@@ -1,0 +1,31 @@
+# Async HTTP and WebSocket clients shared by spot_binance.py, trader.py, telegram_server.py, etc.
+aiohttp
+httpx
+requests
+websocket-client
+websockets
+
+# CLI / utility helpers
+colorama
+psutil
+python-dotenv
+pytz
+rich
+cryptography
+
+# Data processing for trader.py
+numpy
+pandas
+
+# Messaging and event-loop tuning
+telethon
+uvloop
+
+# On-chain (BSC / PancakeSwap) helpers
+web3
+
+# Sentiment CLI integration
+lmstudio
+
+# Test suite
+pytest
