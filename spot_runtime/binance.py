@@ -100,7 +100,7 @@ class BinanceHyperbeastTrader:
         logger.info(f"Binance Multi-Account Trader started - {len(self.accounts)} accounts found")
         logger.info("Binance environment: %s", "testnet" if self.use_testnet else "live")
         for acc in self.accounts:
-            logger.info(f"  - {acc['name']}: {acc['api_key'][:20]}...")
+            logger.info("  - %s", acc["name"])
         
         self._warm_up()
     
