@@ -58,7 +58,6 @@ def build_manager() -> trader.PositionManager:
     manager.binance_apis = {"PRIMARY": DummyExchangeAPI()}
     manager.mexc_api = DummyExchangeAPI()
     manager.gate_api = DummyExchangeAPI()
-    manager.is_friend_session = False
     manager.strategies = {}
     return manager
 

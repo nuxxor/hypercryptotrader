@@ -19,7 +19,7 @@ Pipeline flow:
 
 This public copy intentionally keeps the solo-trader core and excludes:
 
-- follower / friends launchers and multi-account orchestration files
+- follower launchers and multi-account orchestration files
 - private `.env` files, account maps, whitelist files, and proxy assignments
 - runtime logs, caches, market dumps, and trade result artefacts
 - legacy monolithic snapshots and unrelated side tools
@@ -94,7 +94,6 @@ hypercryptotrader/
 ├── spot_binance.py
 ├── trader.py
 ├── signal_relay.py
-├── accounts_config.py
 ├── coinmarketcap_loader.py
 ├── tree_runtime/
 ├── spot_runtime/

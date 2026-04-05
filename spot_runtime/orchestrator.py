@@ -18,10 +18,6 @@ class UltraTrader:
         self.binance_trader = BinanceHyperbeastTrader(test_mode)
         self.mexc_trader = MexcHyperbeastTrader(test_mode)
         self.gate_trader = GateUltraTrader(test_mode=test_mode)
-        
-        # Follower mı?
-        self.friend_mode = (os.getenv("FRIENDS_MODE") or "").strip().lower()
-        self.is_friend_session = self.friend_mode in {"spot", "trader", "friends", "1", "true"}
 
         def _env_flag(name: str, default: bool) -> bool:
             value = os.getenv(name)
@@ -54,20 +50,16 @@ class UltraTrader:
         self.signal_api_key = os.getenv("SIGNAL_API_KEY", "")
         self.signal_ws_client = None
 
-        # Hazırlık API endpoint (takipçiler için varsayılan kapalı)
+        # Hazırlık API endpoint
         self.prep_ws_url = os.getenv("PREP_WS_URL", "ws://localhost:9999/ws")
         self.prep_api_key = os.getenv("PREP_API_KEY", "")
         self.prep_ws_client = None
         self.prep_ws_enabled = _env_flag("ENABLE_PREP_WS", True)
-        if self.is_friend_session:
-            self.prep_ws_enabled = _env_flag("FRIENDS_ENABLE_PREP_WS", False)
 
-        # Position/trade notification channel (takipçiler için varsayılan kapalı)
+        # Position/trade notification channel
         self.position_ws_url = os.getenv("POSITION_WS_URI", "ws://localhost:9999/ws")
         self.position_ws_client = None
         self.position_ws_enabled = _env_flag("ENABLE_POSITION_WS", True)
-        if self.is_friend_session:
-            self.position_ws_enabled = _env_flag("FRIENDS_ENABLE_POSITION_WS", False)
         prep_cache_env = os.getenv("PREPARED_DATA_CACHE_FILE")
         self.prepared_cache_path = Path(prep_cache_env) if prep_cache_env else CACHE_ROOT / "prepared_data_cache.json"
         self.prepared_cache: Dict[str, Any] = {}
@@ -75,10 +67,10 @@ class UltraTrader:
         self._load_prepared_cache_from_disk()
         self._last_signal_payload = None
         try:
-            jitter_default = float(os.getenv("FRIENDS_EXECUTION_JITTER_MS", "60" if self.is_friend_session else "0"))
+            jitter_default = float(os.getenv("EXECUTION_JITTER_MS", "0"))
         except ValueError:
-            jitter_default = 60.0 if self.is_friend_session else 0.0
-        self.friend_execution_jitter_ms = max(0.0, jitter_default)
+            jitter_default = 0.0
+        self.execution_jitter_ms = max(0.0, jitter_default)
         
         # İstatistikler
         self.stats = {
@@ -1082,7 +1074,7 @@ class UltraTrader:
                                 extra_suffix,
                             )
             
-            if success_count > 0 and not self.test_mode and not self.is_friend_session:
+            if success_count > 0 and not self.test_mode:
                 affected_exchanges = set([result.get('exchange') for result in results if result.get('success', False)])
                 if affected_exchanges:
                     await self._refresh_affected_balances(affected_exchanges)
@@ -1277,9 +1269,9 @@ class UltraTrader:
             # İşlemleri başlat
             logger.info(f"Starting trades - Tokens: {tokens}, Exchanges: {exchanges_to_use}")
 
-            if self.is_friend_session and self.friend_execution_jitter_ms > 0:
-                delay = random.uniform(0, self.friend_execution_jitter_ms) / 1000.0
-                logger.debug("Friend session jitter: sleeping %.3f seconds before trades", delay)
+            if self.execution_jitter_ms > 0:
+                delay = random.uniform(0, self.execution_jitter_ms) / 1000.0
+                logger.debug("Execution jitter: sleeping %.3f seconds before trades", delay)
                 await asyncio.sleep(delay)
             
             result = await self.execute_trades(

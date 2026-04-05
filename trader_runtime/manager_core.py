@@ -59,17 +59,10 @@ class PositionManagerCoreMixin:
                 if self.binance_key_type != "hmac":
                     self.binance_api_secret = self.binance_api_secret or ""
 
-        # Follower moduna özgü ayarlar
-        self.account_slug = (os.getenv("ACCOUNT_SLUG") or "").strip()
-        self.friend_account_definition = None
         self.active_account_label = (
             os.getenv("ACCOUNT_LABEL")
-            or (self.account_slug.upper() if self.account_slug else "PRIMARY")
+            or "PRIMARY"
         )
-
-        # Follower modu mu?
-        self.friend_mode = (os.getenv("FRIENDS_MODE") or "").strip().lower()
-        self.is_friend_session = self.friend_mode in {"spot", "trader", "friends", "1", "true"}
 
         # Diğer borsa API bilgileri (varsayılan olarak ortamdan)
         self.gate_api_key = os.getenv("GATE_API_KEY") if "gate" in self.enabled_exchanges else None
@@ -77,25 +70,16 @@ class PositionManagerCoreMixin:
         self.mexc_api_key = os.getenv("MEXC_API_KEY") if "mexc" in self.enabled_exchanges else None
         self.mexc_api_secret = os.getenv("MEXC_API_SECRET") if "mexc" in self.enabled_exchanges else None
 
-        if self.is_friend_session:
-            self._initialise_friend_credentials()
-
         self.exchange_local_ips: Dict[str, Optional[str]] = {
             "binance": self._normalise_ip(os.getenv("BINANCE_LOCAL_IP")),
             "gate": self._normalise_ip(os.getenv("GATE_LOCAL_IP")),
             "mexc": self._normalise_ip(os.getenv("MEXC_LOCAL_IP")),
         }
-        if self.friend_account_definition and getattr(self.friend_account_definition, "network", None):
-            for exchange, network_cfg in self.friend_account_definition.network.items():
-                if exchange not in self.exchange_local_ips:
-                    continue
-                if not self.exchange_local_ips[exchange] and getattr(network_cfg, "local_ip", None):
-                    self.exchange_local_ips[exchange] = self._normalise_ip(network_cfg.local_ip)
 
         self.primary_local_ip = self._select_local_ip()
         if self.primary_local_ip:
             logger.info(
-                "Using follower local IP %s for outbound exchange traffic (%s)",
+                "Using configured local IP %s for outbound exchange traffic (%s)",
                 self.primary_local_ip,
                 self.active_account_label,
             )
@@ -129,8 +113,7 @@ class PositionManagerCoreMixin:
             missing.extend(["MEXC_API_KEY", "MEXC_API_SECRET"])
 
         if missing:
-            context = f" for follower '{self.account_slug}'" if (self.is_friend_session and self.account_slug) else ""
-            raise ValueError(f"Missing API credentials{context}: {', '.join(missing)}")
+            raise ValueError(f"Missing API credentials: {', '.join(missing)}")
 
         self.session = None
         self.binance_apis = {}  # account_name -> BinanceAPI instance
@@ -166,13 +149,6 @@ class PositionManagerCoreMixin:
 
         # WebSocket yapılandırması (pozisyon bildirimi için)
         default_position_ws = os.getenv("POSITION_WS_URI") or os.getenv("SIGNAL_WS_URL") or "ws://localhost:9999/ws"
-        if self.is_friend_session:
-            default_position_ws = (
-                os.getenv("FRIENDS_SIGNAL_WS_URL")
-                or os.getenv("SIGNAL_RELAY_WS_URL")
-                or os.getenv("SIGNAL_RELAY_WS")
-                or default_position_ws
-            )
         self.position_ws_uri = default_position_ws
         self.position_ws = None
         self.position_ws_connected = False
@@ -366,73 +342,6 @@ class PositionManagerCoreMixin:
             if ip:
                 return ip
         return None
-
-    def _initialise_friend_credentials(self) -> None:
-        slug = (self.account_slug or "").strip().lower()
-        if not slug:
-            fallback_label = (os.getenv("ACCOUNT_LABEL") or "").strip().lower()
-            if fallback_label:
-                slug = fallback_label
-                self.account_slug = fallback_label
-
-        if not slug:
-            logger.warning("Friend session detected but ACCOUNT_SLUG/ACCOUNT_LABEL not set; falling back to environment variables")
-            return
-
-        default_env2_path = Path.home() / "trader" / ".env2"
-        env2_path = Path(os.getenv("FRIENDS_ENV2_PATH", str(default_env2_path)))
-        network_path = Path(os.getenv("FRIENDS_NETWORK_PATH", "account_network.json"))
-
-        try:
-            follower_accounts = load_account_definitions(
-                include_primary=False,
-                env2_path=env2_path,
-                network_config_path=network_path,
-            )
-        except Exception as exc:
-            logger.error("Unable to load follower credentials from %s: %s", env2_path, exc)
-            return
-
-        match = next((acc for acc in follower_accounts if acc.name.lower() == slug), None)
-        if not match:
-            logger.error("Friend account '%s' not found in %s", slug, env2_path)
-            return
-
-        self.friend_account_definition = match
-        self.active_account_label = match.label or match.name.upper()
-        self.account_slug = match.name
-
-        if match.binance:
-            self.binance_api_key = match.binance.api_key
-            self.binance_api_secret = match.binance.api_secret
-        if match.gate:
-            self.gate_api_key = match.gate.api_key
-            self.gate_api_secret = match.gate.api_secret
-        if match.mexc:
-            self.mexc_api_key = match.mexc.api_key
-            self.mexc_api_secret = match.mexc.api_secret
-
-        self._apply_friend_network_settings(match)
-
-    def _apply_friend_network_settings(self, account_def) -> None:
-        if not account_def or not getattr(account_def, "network", None):
-            return
-
-        for exchange, network_cfg in account_def.network.items():
-            if not isinstance(network_cfg, ExchangeNetwork):
-                continue
-            if network_cfg.local_ip:
-                env_key = f"{exchange.upper()}_LOCAL_IP"
-                os.environ.setdefault(env_key, network_cfg.local_ip)
-                logger.info(
-                    "Using %s=%s for follower account %s",
-                    env_key,
-                    network_cfg.local_ip,
-                    account_def.label,
-                )
-            if network_cfg.proxy_url:
-                env_key = f"{exchange.upper()}_PROXY_URL"
-                os.environ.setdefault(env_key, network_cfg.proxy_url)
 
     async def _check_min_notional(self, position: Position, quantity: float) -> tuple[bool, float]:
         """Minimum işlem değeri kontrolü ve düzeltmesi

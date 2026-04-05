@@ -24,8 +24,6 @@ import pytz
 import math
 from pathlib import Path
 
-from accounts_config import load_account_definitions, ExchangeNetwork
-
 try:
     from websockets.exceptions import InvalidStatus
 except ImportError:  # websockets < 12
@@ -90,8 +88,7 @@ __all__ = [
     'Decimal', 'ROUND_DOWN', 'Path', 'datetime', 'timedelta', 'timezone', 'dataclass',
     'deque', 'asyncio', 'aiohttp', 'websockets', 'hmac', 'hashlib', 'time',
     'json', 'logging', 'os', 'traceback', 're', 'argparse', 'load_dotenv',
-    'random', 'string', 'np', 'urllib', 'pytz', 'math', 'load_account_definitions',
-    'ExchangeNetwork', 'InvalidStatus', 'logger',
+    'random', 'string', 'np', 'urllib', 'pytz', 'math', 'InvalidStatus', 'logger',
     'DEFAULT_POSITION_HTTP_TOTAL_TIMEOUT', 'DEFAULT_POSITION_HTTP_CONNECT_TIMEOUT',
     'DEFAULT_POSITION_HTTP_SOCK_CONNECT_TIMEOUT', 'DEFAULT_POSITION_HTTP_SOCK_READ_TIMEOUT',
     'DEFAULT_POSITION_WS_OPEN_TIMEOUT', 'DEFAULT_POSITION_WS_CLOSE_TIMEOUT',

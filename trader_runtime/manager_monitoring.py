@@ -497,12 +497,8 @@ class PositionManagerMonitoringMixin:
                     
                     position = self.positions[position_key]
                     
-                    # PRIMARY HESAP DEĞİLSE ATLA - ÖNEMLİ!
-                    if (
-                        not self.is_friend_session
-                        and position.exchange == "binance"
-                        and position.account_name != "PRIMARY"
-                    ):
+                    # Solo public repo only evaluates the primary Binance account.
+                    if position.exchange == "binance" and position.account_name != "PRIMARY":
                         continue  # Sadece PRIMARY değerlendirilir
                     
                     # Kapalı pozisyonları atla
@@ -560,12 +556,8 @@ class PositionManagerMonitoringMixin:
                     # Dust birikimini kontrol et; koşul sağlanırsa otomatik temizle
                     self._should_release_gate_dust(position)
 
-                # PRIMARY OLMAYAN HESAPLARI DEĞERLENDİRME - ÖNEMLİ!
-                if (
-                    not self.is_friend_session
-                    and position.exchange == "binance"
-                    and position.account_name != "PRIMARY"
-                ):
+                # Solo public repo only evaluates the primary Binance account.
+                if position.exchange == "binance" and position.account_name != "PRIMARY":
                     return  # Sadece PRIMARY değerlendirilir, diğerleri onu takip eder
 
                 if self._should_run_balance_guard(position):
@@ -734,4 +726,3 @@ class PositionManagerMonitoringMixin:
         except Exception as e:
             logger.error(f"Error evaluating position {position.symbol}: {str(e)}")
             logger.debug(traceback.format_exc())
-

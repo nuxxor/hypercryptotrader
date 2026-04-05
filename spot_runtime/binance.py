@@ -77,22 +77,6 @@ class BinanceHyperbeastTrader:
         self._cache_eviction_interval = 60.0  # Evict every 60 seconds
         self._max_cache_size = 500  # Max entries per cache
 
-        friend_mode = (os.getenv("FRIENDS_MODE") or "").strip().lower()
-        self.is_friend_session = friend_mode in {"spot", "trader", "friends", "1", "true"}
-        if self.is_friend_session:
-            try:
-                self._symbol_info_cache_ttl = float(os.getenv("FRIENDS_SYMBOL_CACHE_TTL", "3600"))
-            except ValueError:
-                self._symbol_info_cache_ttl = 3600.0
-            try:
-                self._listing_cache_ttl = float(os.getenv("FRIENDS_LISTING_CACHE_TTL", "30"))
-            except ValueError:
-                self._listing_cache_ttl = 30.0
-            logger.info(
-                "Friend session: using cached symbol TTL %.1fs and listing TTL %.1fs",
-                self._symbol_info_cache_ttl,
-                self._listing_cache_ttl,
-            )
         override_ttl = os.getenv("BINANCE_SYMBOL_CACHE_TTL_OVERRIDE")
         if override_ttl:
             try:

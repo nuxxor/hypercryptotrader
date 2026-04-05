@@ -83,14 +83,6 @@ class MexcHyperbeastTrader:
         self._symbol_info_cache: Dict[str, Dict[str, Any]] = {}
         self._symbol_info_cache_time: Dict[str, float] = {}
         self._symbol_info_cache_ttl = 3600.0
-        friend_mode = (os.getenv("FRIENDS_MODE") or "").strip().lower()
-        self.is_friend_session = friend_mode in {"spot", "trader", "friends", "1", "true"}
-        if self.is_friend_session:
-            try:
-                self._symbol_info_cache_ttl = float(os.getenv("FRIENDS_MEXC_SYMBOL_CACHE_TTL", "3600"))
-            except ValueError:
-                self._symbol_info_cache_ttl = 3600.0
-            logger.info("Friend session: MEXC symbol cache TTL %.1fs", self._symbol_info_cache_ttl)
         ttl_override = os.getenv("MEXC_SYMBOL_CACHE_TTL_OVERRIDE")
         if ttl_override:
             try:

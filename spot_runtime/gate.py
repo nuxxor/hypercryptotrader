@@ -246,14 +246,6 @@ class GateUltraTrader:
         self._pair_info_cache = {}
         self._pair_info_time = {}
         self._pair_info_ttl = 300
-        friend_mode = (os.getenv("FRIENDS_MODE") or "").strip().lower()
-        self.is_friend_session = friend_mode in {"spot", "trader", "friends", "1", "true"}
-        if self.is_friend_session:
-            try:
-                self._pair_info_ttl = float(os.getenv("FRIENDS_GATE_PAIR_CACHE_TTL", "3600"))
-            except ValueError:
-                self._pair_info_ttl = 3600.0
-            logger.info("Friend session: Gate pair cache TTL %.1fs", self._pair_info_ttl)
         pair_override = os.getenv("GATE_PAIR_CACHE_TTL_OVERRIDE")
         if pair_override:
             try:
